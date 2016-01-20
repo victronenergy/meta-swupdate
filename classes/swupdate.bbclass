@@ -65,6 +65,8 @@ python do_swuimage () {
     workdir = d.getVar('WORKDIR', True)
     images = (d.getVar('SWUPDATE_IMAGES', True) or "").split()
     s = d.getVar('S', True)
+    if not os.path.exists(s):
+        os.makedirs(s)
     shutil.copyfile(os.path.join(workdir, "sw-description"), os.path.join(s, "sw-description"))
     fetch = bb.fetch2.Fetch([], d)
     list_for_cpio = "sw-description"
