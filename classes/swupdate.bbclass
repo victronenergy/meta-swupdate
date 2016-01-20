@@ -81,7 +81,7 @@ python do_swuimage () {
     deploydir = d.getVar('DEPLOY_DIR_IMAGE', True)
 
     for image in images:
-        imagename = image + '-' + d.getVar('MACHINE', True) + d.getVarFlag("SWUPDATE_IMAGES_FSTYPES", image, True)
+        imagename = image
         src = os.path.join(deploydir, "%s" % imagename)
         dst = os.path.join(s, "%s" % imagename)
         shutil.copyfile(src, dst)
