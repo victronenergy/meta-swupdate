@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=0636e73ff0215e8d672dc4c32c317bb3"
 
 inherit cml1
 
-SRC_URI = "git://github.com/sbabic/swupdate.git;protocol=git \
+SRC_URI = "git://github.com/jhofstee/swupdate.git;protocol=git;branch=hamming \
      file://defconfig \
      "
 
