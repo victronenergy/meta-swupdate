@@ -84,6 +84,9 @@ python do_swuimage () {
         imagename = image
         src = os.path.join(deploydir, "%s" % imagename)
         dst = os.path.join(s, "%s" % imagename)
+        if not os.path.isfile(src):
+            bb.error("swu: cannot add " + src + " (file does not exist)")
+            return
         shutil.copyfile(src, dst)
         list_for_cpio += " " + imagename
 
