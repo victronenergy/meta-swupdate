@@ -1,0 +1,199 @@
+From dde37a9fde077e291d4062beda9d7397bddd1e39 Mon Sep 17 00:00:00 2001
+From: Christian Storm <christian.storm@tngtech.com>
+Date: Tue, 4 Oct 2016 16:39:22 +0200
+Subject: [PATCH 3/3] libubootenv: fix defunct CONFIG_UBOOT_FWENV option
+
+libubootenv's functions are all called with NULL as environment option
+parameter, hence libubootenv's compile-time configuration for the U-Boot
+environment to be used is chosen unconditionally, rendering SWUpdate's
+CONFIG_UBOOT_FWENV option void.
+Fix this by a default environment option parameter to libubootenv calls
+respecting CONFIG_UBOOT_FWENV.
+
+Signed-off-by: Christian Storm <christian.storm@tngtech.com>
+Signed-off-by: Silvano Cirujano Cuesta <silvano.cirujano-cuesta@siemens.com>
+Acked-by: Stefano Babic <sbabic@denx.de>
+---
+ core/swupdate.c          |  1 -
+ core/util.c              |  4 ++--
+ corelib/installer.c      |  2 +-
+ handlers/Config.in       |  5 ++---
+ handlers/uboot_handler.c |  7 ++++++-
+ include/fw_env.h         | 14 ++------------
+ suricatta/state.c        | 10 +++++-----
+ 7 files changed, 18 insertions(+), 25 deletions(-)
+
+diff --git a/core/swupdate.c b/core/swupdate.c
+index 3e78dd7..6651db7 100644
+--- a/core/swupdate.c
++++ b/core/swupdate.c
+@@ -38,7 +38,6 @@
+ #include "cpiohdr.h"
+ #include "util.h"
+ #include "swupdate.h"
+-#include "fw_env.h"
+ #include "parsers.h"
+ #include "network_interface.h"
+ #include "handler.h"
+diff --git a/core/util.c b/core/util.c
+index 207d06c..404cd11 100644
+--- a/core/util.c
++++ b/core/util.c
+@@ -39,12 +39,12 @@
+ int fw_set_one_env (const char *name, const char *value)
+ {
+ 
+-	if (fw_env_open (NULL)) {
++	if (fw_env_open (fw_env_opts)) {
+ 		fprintf (stderr, "Error: environment not initialized\n");
+ 		return -1;
+ 	}
+ 	fw_env_write ((char *)name, (char *)value);
+-	return fw_env_close (NULL);
++	return fw_env_close (fw_env_opts);
+ }
+ #else
+ int fw_set_one_env (const char __attribute__ ((__unused__)) *name,
+diff --git a/corelib/installer.c b/corelib/installer.c
+index e5945bb..e4879b1 100644
+--- a/corelib/installer.c
++++ b/corelib/installer.c
+@@ -192,7 +192,7 @@ static int update_uboot_env(void)
+ 
+ #ifdef CONFIG_UBOOT
+ 	TRACE("Updating U-boot environment");
+-	ret = fw_parse_script((char *)UBOOT_SCRIPT, NULL);
++	ret = fw_parse_script((char *)UBOOT_SCRIPT, fw_env_opts);
+ 	if (ret < 0)
+ 		ERROR("Error updating U-Boot environment");
+ #endif
+diff --git a/handlers/Config.in b/handlers/Config.in
+index a78e184..274332e 100644
+--- a/handlers/Config.in
++++ b/handlers/Config.in
+@@ -129,8 +129,7 @@ config UBOOT_FWENV
+ 	default "/etc/fw_env.config"
+ 	help
+ 	  This is the file described in U-Boot documentation
+-	  in the tools directory. It tells to the user space
+-	  where U-Boot environment is saved, that is, on which
+-	  MTD device.
++	  in the tools directory. It tells where the U-Boot
++	  environment is saved.
+ 
+ endmenu
+diff --git a/handlers/uboot_handler.c b/handlers/uboot_handler.c
+index 4bdb6a5..84877cf 100644
+--- a/handlers/uboot_handler.c
++++ b/handlers/uboot_handler.c
+@@ -25,6 +25,7 @@
+ #include <unistd.h>
+ 
+ #include <mtd/mtd-user.h>
++#include "generated/autoconf.h"
+ #include "swupdate.h"
+ #include "handler.h"
+ #include "fw_env.h"
+@@ -32,6 +33,10 @@
+ 
+ static void uboot_handler(void);
+ 
++struct env_opts *fw_env_opts = &(struct env_opts) {
++	.config_file = (char *)CONFIG_UBOOT_FWENV
++};
++
+ static int install_uboot_environment(struct img_type *img,
+ 	void __attribute__ ((__unused__)) *data)
+ {
+@@ -56,7 +61,7 @@ static int install_uboot_environment(struct img_type *img,
+ 		close(fdout);
+ 	}
+ 
+-	ret = fw_parse_script(filename, NULL);
++	ret = fw_parse_script(filename, fw_env_opts);
+ 
+ 	if (ret < 0)
+ 		snprintf(buf, sizeof(buf), "Error setting U-Boot environment");
+diff --git a/include/fw_env.h b/include/fw_env.h
+index 04d27bd..02b442b 100644
+--- a/include/fw_env.h
++++ b/include/fw_env.h
+@@ -18,28 +18,18 @@
+  * MA 02111-1307 USA
+  */
+ 
+-/*
+- * To build the utility with the static configuration
+- * comment out the next line.
+- * See included "fw_env.config" sample file
+- * for notes on configuration.
+- */
+-#ifndef CONFIG_UBOOT_FWENV
+-#define CONFIG_UBOOT_ENV     "/etc/fw_env.config"
+-#endif
+-
+ #include <stdint.h>
+ 
+ #define AES_KEY_LENGTH  (128 / 8)
+ 
+ struct env_opts {
+-#ifdef CONFIG_FILE
+         char *config_file;
+-#endif
+         int aes_flag; /* Is AES encryption used? */
+         uint8_t aes_key[AES_KEY_LENGTH];
+ };
+ 
++extern struct env_opts *fw_env_opts;
++
+ int fw_parse_script(char *fname, struct env_opts *opts);
+ int fw_env_open(struct env_opts *opts);
+ int fw_env_write(char *name, char *value);
+diff --git a/suricatta/state.c b/suricatta/state.c
+index 0065f85..12ff9f2 100644
+--- a/suricatta/state.c
++++ b/suricatta/state.c
+@@ -49,7 +49,7 @@ server_op_res_t reset_state(char *key)
+ #ifdef CONFIG_SURICATTA_STATE_CHOICE_UBOOT
+ server_op_res_t save_state(char *key, update_state_t value)
+ {
+-	if (fw_env_open(NULL) != 0) {
++	if (fw_env_open(fw_env_opts) != 0) {
+ 		ERROR("Error: Cannot initialize U-Boot environment.\n");
+ 		return SERVER_EERR;
+ 	}
+@@ -57,12 +57,12 @@ server_op_res_t save_state(char *key, update_state_t value)
+ 		ERROR("Error: Cannot write to U-Boot's environment.\n");
+ 		return SERVER_EERR;
+ 	}
+-	return fw_env_close(NULL) == 0 ? SERVER_OK : SERVER_EERR;
++	return fw_env_close(fw_env_opts) == 0 ? SERVER_OK : SERVER_EERR;
+ }
+ 
+ server_op_res_t read_state(char *key, update_state_t *value)
+ {
+-	if (fw_env_open(NULL) != 0) {
++	if (fw_env_open(fw_env_opts) != 0) {
+ 		ERROR("Error: Cannot initialize U-Boot environment.\n");
+ 		return SERVER_EERR;
+ 	}
+@@ -79,7 +79,7 @@ server_op_res_t read_state(char *key, update_state_t *value)
+ }
+ server_op_res_t reset_state(char *key)
+ {
+-	if (fw_env_open(NULL) != 0) {
++	if (fw_env_open(fw_env_opts) != 0) {
+ 		ERROR("Error: Cannot initialize U-Boot environment.\n");
+ 		return SERVER_EERR;
+ 	}
+@@ -87,6 +87,6 @@ server_op_res_t reset_state(char *key)
+ 		ERROR("Error: Cannot write to U-Boot's environment.\n");
+ 		return SERVER_EERR;
+ 	}
+-	return fw_env_close(NULL) == 0 ? SERVER_OK : SERVER_EERR;
++	return fw_env_close(fw_env_opts) == 0 ? SERVER_OK : SERVER_EERR;
+ }
+ #endif /* CONFIG_SURICATTA_STATE_CHOICE_UBOOT */
+-- 
+2.7.4
+

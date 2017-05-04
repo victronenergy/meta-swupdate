@@ -1,0 +1,102 @@
+From cad62f773c985931d67927887b67119aed80861e Mon Sep 17 00:00:00 2001
+From: Stefano Babic <sbabic@denx.de>
+Date: Mon, 25 Jul 2016 20:31:02 +0200
+Subject: [PATCH 1/3] fix u-boot writing with libubootenv
+
+There is a change in U-Boot library, please see
+commit 14070e69ad6d01abf65c06150dc9302bca1b7973 in
+U-Boot. API was changed, and users of library must reflect
+this change.
+
+This patch fix the issue, on long term the fw_env.h
+of the library must be used instead of its own.
+
+Signed-off-by: Stefano Babic <sbabic@denx.de>
+---
+ core/util.c              |  4 ++--
+ corelib/installer.c      |  2 +-
+ handlers/uboot_handler.c |  2 +-
+ include/fw_env.h         | 23 ++++++++++++++++-------
+ 4 files changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/core/util.c b/core/util.c
+index 34097f6..207d06c 100644
+--- a/core/util.c
++++ b/core/util.c
+@@ -39,12 +39,12 @@
+ int fw_set_one_env (const char *name, const char *value)
+ {
+ 
+-	if (fw_env_open ()) {
++	if (fw_env_open (NULL)) {
+ 		fprintf (stderr, "Error: environment not initialized\n");
+ 		return -1;
+ 	}
+ 	fw_env_write ((char *)name, (char *)value);
+-	return fw_env_close ();
++	return fw_env_close (NULL);
+ }
+ #else
+ int fw_set_one_env (const char __attribute__ ((__unused__)) *name,
+diff --git a/corelib/installer.c b/corelib/installer.c
+index 915fc5c..e5945bb 100644
+--- a/corelib/installer.c
++++ b/corelib/installer.c
+@@ -192,7 +192,7 @@ static int update_uboot_env(void)
+ 
+ #ifdef CONFIG_UBOOT
+ 	TRACE("Updating U-boot environment");
+-	ret = fw_parse_script((char *)UBOOT_SCRIPT);
++	ret = fw_parse_script((char *)UBOOT_SCRIPT, NULL);
+ 	if (ret < 0)
+ 		ERROR("Error updating U-Boot environment");
+ #endif
+diff --git a/handlers/uboot_handler.c b/handlers/uboot_handler.c
+index 7a41d43..4bdb6a5 100644
+--- a/handlers/uboot_handler.c
++++ b/handlers/uboot_handler.c
+@@ -56,7 +56,7 @@ static int install_uboot_environment(struct img_type *img,
+ 		close(fdout);
+ 	}
+ 
+-	ret = fw_parse_script(filename);
++	ret = fw_parse_script(filename, NULL);
+ 
+ 	if (ret < 0)
+ 		snprintf(buf, sizeof(buf), "Error setting U-Boot environment");
+diff --git a/include/fw_env.h b/include/fw_env.h
+index 87c92b3..04d27bd 100644
+--- a/include/fw_env.h
++++ b/include/fw_env.h
+@@ -28,12 +28,21 @@
+ #define CONFIG_UBOOT_ENV     "/etc/fw_env.config"
+ #endif
+ 
+-extern int   fw_printenv(int argc, char *argv[]);
+-extern char *fw_getenv  (char *name);
+-extern int fw_setenv  (int argc, char *argv[]);
+-extern int fw_parse_script(char *fname);
+-extern int fw_env_open(void);
+-extern int fw_env_write(char *name, char *value);
+-extern int fw_env_close(void);
++#include <stdint.h>
++
++#define AES_KEY_LENGTH  (128 / 8)
++
++struct env_opts {
++#ifdef CONFIG_FILE
++        char *config_file;
++#endif
++        int aes_flag; /* Is AES encryption used? */
++        uint8_t aes_key[AES_KEY_LENGTH];
++};
++
++int fw_parse_script(char *fname, struct env_opts *opts);
++int fw_env_open(struct env_opts *opts);
++int fw_env_write(char *name, char *value);
++int fw_env_close(struct env_opts *opts);
+ 
+ extern unsigned	long  crc32	 (unsigned long, const unsigned char *, unsigned);
+-- 
+2.7.4
+
