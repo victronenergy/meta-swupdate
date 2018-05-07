@@ -64,6 +64,28 @@ def swupdate_getdepends(d):
         depstr += " " + dep + ":do_build"
     return depstr
 
+# cpio seems to add zero padding to the swu file up to the block size. swupdate
+# expects it to padding till it is 4 bytes aligned again. These trailing zeros
+# can crash swupdate by causing a SIGPIPE. So make sure only the trailing zeros
+# as expected by swupdate are in the swu file.
+
+def swupdate_fix_cpio_padding(filename):
+    file = open(filename, "r+b")
+    file.seek(0, 2)
+    addr = file.tell() - 1
+
+    while addr:
+        file.seek(addr, 0)
+
+        if ord(file.read(1)) != 0:
+            addr += 1
+            addr += 4 - (addr % 4)
+            print("truncating " + filename + " to " + str(addr))
+            file.truncate(addr)
+            break
+        addr -= 1
+
+
 do_swuimage[dirs] = "${TOPDIR}"
 do_swuimage[cleandirs] += "${S}"
 do_swuimage[umask] = "022"
@@ -163,6 +185,7 @@ python do_swuimage () {
 
     line = 'for i in ' + ' '.join(list_for_cpio) + '; do echo $i;done | cpio -ov -H crc >' + os.path.join(deploydir,d.getVar('IMAGE_NAME', True) + '.swu')
     os.system("cd " + s + ";" + line)
+    swupdate_fix_cpio_padding(os.path.join(deploydir,d.getVar('IMAGE_NAME', True) + '.swu'))
 }
 
 COMPRESSIONTYPES = ""
