@@ -11,6 +11,7 @@
 # To use, add swupdate to the inherit clause and set
 # set the images (all of them must be found in deploy directory)
 # that are part of the compound image.
+inherit image-artifact-names
 
 S = "${WORKDIR}/${PN}"
 
