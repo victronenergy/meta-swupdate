@@ -24,7 +24,7 @@ FILES_${PN}-dev = "${includedir}"
 FILES_${PN}-staticdev = "${libdir}"
 FILES_${PN} = "${bindir}/* ${sysconfdir}"
 
-S = "${WORKDIR}/git/"
+S = "${WORKDIR}/git"
 
 EXTRA_OEMAKE += "V=1 ARCH=${TARGET_ARCH} CROSS_COMPILE=${TARGET_PREFIX} SKIP_STRIP=y"
 
@@ -112,14 +112,14 @@ do_install () {
   install -m 0755 swupdate ${D}${bindir}/
 
   install -m 0755 -d ${D}/www
-  install -m 0755 ${S}www/* ${D}/www
+  install -m 0755 ${S}/www/* ${D}/www
 
   install -d ${D}${libdir}/
   install -d ${D}${includedir}/
-  install -m 0644 ${S}include/network_ipc.h ${D}${includedir}
-  install -m 0644 ${S}include/swupdate_status.h ${D}${includedir}
-  install -m 0644 ${S}include/progress.h ${D}${includedir}
-  install -m 0755 ${S}ipc/lib.a ${D}${libdir}/libswupdate.a
+  install -m 0644 ${S}/include/network_ipc.h ${D}${includedir}
+  install -m 0644 ${S}/include/swupdate_status.h ${D}${includedir}
+  install -m 0644 ${S}/include/progress.h ${D}${includedir}
+  install -m 0755 ${S}/ipc/lib.a ${D}${libdir}/libswupdate.a
 
   install -d ${D}${sysconfdir}/init.d
   install -m 755 ${WORKDIR}/swupdate ${D}${sysconfdir}/init.d
