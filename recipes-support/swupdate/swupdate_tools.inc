@@ -1,8 +1,8 @@
 PACKAGES =+ "${PN}-tools"
 
-INSANE_SKIP_${PN}-tools = "ldflags"
+INSANE_SKIP:${PN}-tools = "ldflags"
 
-FILES_${PN}-tools = "${bindir}/swupdate-client \
+FILES:${PN}-tools = "${bindir}/swupdate-client \
                     ${bindir}/swupdate-progress \
                     ${bindir}/swupdate-hawkbitcfg \
                     ${bindir}/swupdate-sendtohawkbit"
@@ -14,7 +14,7 @@ do_compile() {
   cp swupdate_unstripped swupdate
 }
 
-do_install_append () {
+do_install:append () {
 
   install -m 0755 tools/client_unstripped ${D}${bindir}/swupdate-client
   install -m 0755 tools/progress_unstripped ${D}${bindir}/swupdate-progress

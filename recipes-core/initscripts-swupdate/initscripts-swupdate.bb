@@ -16,8 +16,8 @@ do_install () {
 }
 
 PACKAGES = "${PN}"
-FILES_${PN} = "/"
+FILES:${PN} = "/"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-CONFFILES_${PN} = ""
+CONFFILES:${PN} = ""

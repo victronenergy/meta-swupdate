@@ -16,13 +16,13 @@ SRC_URI = "git://github.com/sbabic/swupdate.git;protocol=https;branch=master \
      file://swupdate-progress.service \
      "
 
-INSANE_SKIP_${PN} = "ldflags"
+INSANE_SKIP:${PN} = "ldflags"
 PACKAGES =+ "${PN}-www"
 
-FILES_${PN}-www = "/www/*"
-FILES_${PN}-dev = "${includedir}"
-FILES_${PN}-staticdev = "${libdir}"
-FILES_${PN} = "${bindir}/* ${sysconfdir}"
+FILES:${PN}-www = "/www/*"
+FILES:${PN}-dev = "${includedir}"
+FILES:${PN}-staticdev = "${libdir}"
+FILES:${PN} = "${bindir}/* ${sysconfdir}"
 
 S = "${WORKDIR}/git"
 
@@ -139,5 +139,5 @@ do_install () {
 INITSCRIPT_NAME = "swupdate"
 INITSCRIPT_PARAMS = "defaults 70"
 
-SYSTEMD_SERVICE_${PN} = "swupdate.service"
-SYSTEMD_SERVICE_${PN} += "swupdate-usb@.service swupdate-progress.service"
+SYSTEMD_SERVICE:${PN} = "swupdate.service"
+SYSTEMD_SERVICE:${PN} += "swupdate-usb@.service swupdate-progress.service"
