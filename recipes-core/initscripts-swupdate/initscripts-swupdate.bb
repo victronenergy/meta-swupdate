@@ -6,13 +6,13 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 
 SRC_URI = "file://rcS.swupdate \
 	"
-
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_install () {
 	install -d ${D}/${sysconfdir}/init.d
 	install -d ${D}${base_sbindir}
-	install -m 755 ${S}/rcS.swupdate ${D}${base_sbindir}/init
+	install -m 755 ${UNPACKDIR}/rcS.swupdate ${D}${base_sbindir}/init
 }
 
 PACKAGES = "${PN}"

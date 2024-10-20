@@ -115,10 +115,10 @@ python () {
 python do_swuimage () {
     import shutil
 
-    workdir = d.getVar('WORKDIR', True)
+    unpackdir = d.getVar('UNPACKDIR', True)
     images = (d.getVar('SWUPDATE_IMAGES', True) or "").split()
     s = d.getVar('S', True)
-    shutil.copyfile(os.path.join(workdir, "sw-description"), os.path.join(s, "sw-description"))
+    shutil.copyfile(os.path.join(unpackdir, "sw-description"), os.path.join(s, "sw-description"))
     fetch = bb.fetch2.Fetch([], d)
     list_for_cpio = ["sw-description"]
 

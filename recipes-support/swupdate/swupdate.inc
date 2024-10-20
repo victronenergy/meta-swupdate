@@ -94,7 +94,7 @@ python () {
 }
 
 do_configure () {
-  cp ${WORKDIR}/defconfig ${S}/.config
+  cp ${UNPACKDIR}/defconfig ${S}/.config
   merge_config.sh -m .config ${@" ".join(find_cfgs(d))}
   cml1_do_configure
 }
@@ -122,17 +122,17 @@ do_install () {
   install -m 0755 ${S}/ipc/lib.a ${D}${libdir}/libswupdate.a
 
   install -d ${D}${sysconfdir}/init.d
-  install -m 755 ${WORKDIR}/swupdate ${D}${sysconfdir}/init.d
+  install -m 755 ${UNPACKDIR}/swupdate ${D}${sysconfdir}/init.d
 
   install -d ${D}${systemd_unitdir}/system
-  install -m 644 ${WORKDIR}/swupdate.service ${D}${systemd_unitdir}/system
-  install -m 644 ${WORKDIR}/swupdate-usb@.service ${D}${systemd_unitdir}/system
-  install -m 644 ${WORKDIR}/swupdate-progress.service ${D}${systemd_unitdir}/system
+  install -m 644 ${UNPACKDIR}/swupdate.service ${D}${systemd_unitdir}/system
+  install -m 644 ${UNPACKDIR}/swupdate-usb@.service ${D}${systemd_unitdir}/system
+  install -m 644 ${UNPACKDIR}/swupdate-progress.service ${D}${systemd_unitdir}/system
 
 
   if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
     install -d ${D}${sysconfdir}/udev/rules.d
-    install -m 0644 ${WORKDIR}/swupdate-usb.rules ${D}${sysconfdir}/udev/rules.d/
+    install -m 0644 ${UNPACKDIR}/swupdate-usb.rules ${D}${sysconfdir}/udev/rules.d/
   fi
 }
 
