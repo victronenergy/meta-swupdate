@@ -13,7 +13,7 @@
 # that are part of the compound image.
 inherit image-artifact-names
 
-S = "${WORKDIR}/${PN}"
+S = "${UNPACKDIR}/${PN}"
 
 DEPENDS += "${@ 'openssl-native' if d.getVar('SWUPDATE_SIGNING', True) else ''}"
 IMAGE_DEPENDS ?= ""
